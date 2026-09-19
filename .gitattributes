@@ -1,0 +1,18 @@
+# Normalise line endings: LF in the repo, native in the working tree.
+* text=auto
+
+# Windows-only scripts must keep CRLF so cmd.exe/PowerShell parse them correctly.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Unix service/config files must keep LF.
+*.sh    text eol=lf
+*.conf  text eol=lf
+*.service text eol=lf
+
+# Binary
+*.png binary
+*.zip binary
+*.exe binary
+*.db  binary

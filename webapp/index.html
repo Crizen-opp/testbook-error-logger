@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Error Logger Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f17; --surface: #1a1a28; --surface-2: #232336;
+    --primary: #667eea; --primary-2: #764ba2;
+    --text: #e8e8f0; --muted: #8a8aa0;
+    --ok: #10b981; --warn: #f59e0b; --bad: #ef4444;
+    --border: #2a2a3e; --dpps: #06b6d4; --mock: #8b5cf6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Header */
+  header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%); padding: 20px 28px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header .tagline { font-size: 12px; opacity: 0.85; margin-top: 3px; }
+  nav { display: flex; gap: 6px; }
+  nav button { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 7px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: background 0.15s; }
+  nav button:hover, nav button.active { background: rgba(255,255,255,0.3); }
+
+  main { padding: 28px; max-width: 1300px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---- Dashboard ---- */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .value.grad { background: linear-gradient(135deg, var(--primary), var(--primary-2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+  .bd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .bd-card h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .bd-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .bd-row:last-child { border-bottom: none; }
+  .bd-row .count { color: var(--primary); font-weight: 700; }
+  .bd-row .sub-counts { font-size: 11px; color: var(--muted); }
+
+  /* Weak zones */
+  .wz-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; }
+  .wz-card h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .wz-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .wz-row:last-child { border-bottom: none; }
+  .wz-bar-wrap { flex: 1; background: var(--surface-2); border-radius: 4px; height: 6px; }
+  .wz-bar { height: 6px; border-radius: 4px; background: linear-gradient(90deg, var(--bad), var(--warn)); }
+  .wz-pct { font-size: 11px; color: var(--muted); width: 36px; text-align: right; }
+  .wz-name { min-width: 0; flex: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wz-total { font-size: 11px; color: var(--primary); font-weight: 700; width: 28px; text-align: right; }
+
+  /* Trend chart */
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; }
+  .chart-card h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* ---- Review ---- */
+  .review-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; }
+  @media (max-width: 800px) { .review-layout { grid-template-columns: 1fr; } }
+
+  .filter-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; align-self: start; position: sticky; top: 20px; }
+  .filter-panel h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 12px; }
+  .filter-group { margin-bottom: 12px; }
+  .filter-group label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .filter-group select, .filter-group input[type=checkbox] { width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); padding: 7px 10px; border-radius: 7px; font-size: 13px; }
+  .filter-group .check-row { display: flex; align-items: center; gap: 6px; }
+  .filter-group .check-row input { width: auto; }
+  .apply-btn { width: 100%; padding: 9px; background: linear-gradient(135deg, var(--primary), var(--primary-2)); border: none; color: white; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; }
+
+  .review-wrap { min-width: 0; }
+  .review-progress { text-align: center; color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+  .card-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .tag { background: var(--surface-2); color: var(--text); padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag.subject { background: linear-gradient(135deg, var(--primary), var(--primary-2)); }
+  .tag.dpps { background: var(--dpps); }
+  .tag.mock { background: var(--mock); }
+  .tag.revision { background: linear-gradient(135deg,#10b981,#059669); }
+  .tag.weight { background: linear-gradient(135deg,#f59e0b,#d97706); color:#1a1a2e; }
+  /* Weights tab */
+  .weights-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+  .w-panel { background:var(--surface-2,#1c1c2e); border:1px solid var(--border,#2a2a3e); border-radius:12px; padding:14px 16px; }
+  .w-panel h3 { margin:0 0 10px; font-size:15px; }
+  .w-hint { font-weight:400; font-size:11px; opacity:0.6; }
+  .w-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .w-table th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.3px; opacity:0.6; padding:4px 6px; border-bottom:1px solid var(--border,#2a2a3e); }
+  .w-table td { padding:5px 6px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .w-input { width:64px; padding:4px 6px; border-radius:6px; border:1px solid var(--border,#2a2a3e); background:rgba(255,255,255,0.06); color:var(--text,#eee); text-align:right; font-weight:600; }
+  .w-input.saved { border-color:#10b981; box-shadow:0 0 0 2px rgba(16,185,129,0.3); }
+  .w-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#10b981; color:#08261c; padding:8px 16px; border-radius:8px; font-weight:600; font-size:13px; opacity:0; pointer-events:none; transition:all 0.2s; }
+  .w-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  /* Revision deck stats */
+  .deck-stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .ds-pill { background:var(--surface-2,#1c1c2e); border:1px solid var(--border,#2a2a3e); border-radius:999px; padding:5px 13px; font-size:12px; opacity:0.9; }
+  .ds-pill b { font-size:14px; margin-left:3px; }
+  .ds-pill.due b { color:#f59e0b; }
+  .ds-pill.mastered b { color:#10b981; }
+  .ds-pill.total b { color:#60a5fa; }
+  .tag.flagged { background: var(--warn); color: #000; }
+  .tag.mistake-silly_mistake { background: #f59e0b; color: #000; }
+  .tag.mistake-concept_gap { background: #ef4444; }
+  .tag.mistake-tricky_option { background: #8b5cf6; }
+  .tag.mistake-formula_confusion { background: #06b6d4; color: #000; }
+
+  .question { font-size: 16px; line-height: 1.65; margin-bottom: 18px; }
+  .options { display: grid; gap: 7px; margin-bottom: 18px; }
+  .option { background: var(--surface-2); padding: 9px 13px; border-radius: 8px; font-size: 14px; border: 1px solid transparent; }
+  .option.your { border-color: var(--bad); }
+  .option.correct { border-color: var(--ok); }
+
+  .answer-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .answer-box { flex: 1; background: var(--surface-2); padding: 11px; border-radius: 8px; font-size: 14px; }
+  .answer-box .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--muted); margin-bottom: 3px; }
+  .answer-box.your { border-left: 3px solid var(--bad); }
+  .answer-box.correct { border-left: 3px solid var(--ok); }
+
+  .solution { background: rgba(102,126,234,0.08); border-left: 3px solid var(--primary); padding: 14px; border-radius: 8px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+
+  /* Notes */
+  .notes-section { margin-top: 16px; background: var(--surface-2); border-radius: 10px; padding: 14px; }
+  .notes-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); margin-bottom: 10px; }
+  .notes-grid { display: grid; gap: 8px; }
+  .notes-grid label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
+  .notes-grid textarea { width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 8px; font-size: 13px; resize: vertical; min-height: 48px; font-family: inherit; }
+  .notes-save-btn { margin-top: 8px; padding: 7px 16px; background: var(--surface); border: 1px solid var(--primary); color: var(--primary); border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .notes-save-btn:hover { background: var(--primary); color: white; }
+
+  .card-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .flag-btn { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 600; }
+  .flag-btn.active { border-color: var(--warn); color: var(--warn); }
+
+  .review-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; flex: 1; }
+  .review-actions button { padding: 13px 6px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; font-size: 12px; transition: transform 0.1s; }
+  .review-actions button:hover { transform: translateY(-2px); }
+  .btn-again { background: var(--bad); color: white; }
+  .btn-hard { background: var(--warn); color: white; }
+  .btn-good { background: var(--ok); color: white; }
+  .btn-easy { background: var(--primary); color: white; }
+  .btn-small { font-size: 10px; display: block; opacity: 0.8; margin-top: 2px; }
+
+  .reveal-btn { margin: 18px auto; display: block; padding: 11px 28px; background: linear-gradient(135deg, var(--primary), var(--primary-2)); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; }
+  .hidden { display: none !important; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .emoji { font-size: 44px; margin-bottom: 14px; }
+
+  /* ---- Browse ---- */
+  .browse-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+  @media (max-width: 860px) { .browse-layout { grid-template-columns: 1fr; } }
+
+  .browse-sidebar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; align-self: start; position: sticky; top: 20px; max-height: calc(100vh - 120px); overflow-y: auto; }
+  .browse-sidebar h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 12px; }
+
+  .tree-item { padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: background 0.12s; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .tree-item:hover { background: var(--surface-2); }
+  .tree-item.active { background: rgba(102,126,234,0.18); color: var(--primary); }
+  .tree-item .cnt { font-size: 11px; color: var(--muted); font-weight: 700; }
+  .tree-item .session-pills { display: flex; gap: 4px; }
+  .pill { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .pill.dpps { background: rgba(6,182,212,0.2); color: var(--dpps); }
+  .pill.mock { background: rgba(139,92,246,0.2); color: var(--mock); }
+
+  .tree-sub { padding-left: 14px; }
+  .tree-sub .tree-item { font-size: 12px; }
+  .tree-subsub { padding-left: 12px; }
+  .tree-subsub .tree-item { font-size: 12px; color: var(--muted); }
+
+  /* Browse filter bar */
+  .browse-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .browse-filters select { background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 7px 10px; border-radius: 7px; font-size: 13px; }
+  .browse-filters label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+  /* Card list */
+  .card-list { display: flex; flex-direction: column; gap: 10px; }
+  .card-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: border-color 0.15s; }
+  .card-item:hover { border-color: var(--primary); }
+  .card-item .qtext { font-size: 13px; line-height: 1.5; margin-bottom: 7px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-item .meta-row { display: flex; gap: 5px; flex-wrap: wrap; }
+
+  /* Breadcrumb */
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 14px; flex-wrap: wrap; }
+  .breadcrumb .crumb { cursor: pointer; color: var(--primary); }
+  .breadcrumb .crumb:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: var(--border); }
+
+  /* Modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; max-width: 740px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 24px; }
+  .modal .close { float: right; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; }
+
+  /* Section title */
+  .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 22px 0 10px; }
+
+  /* Re-ingest banner */
+  .reingest-banner { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.35); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; font-size: 13px; }
+  .reingest-banner .ri-msg { flex: 1; color: var(--warn); }
+  .reingest-banner .ri-msg span { color: var(--text); }
+  .reingest-btn { padding: 7px 16px; background: var(--warn); color: #000; border: none; border-radius: 7px; font-weight: 700; cursor: pointer; font-size: 12px; white-space: nowrap; }
+  .reingest-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Classify section */
+  .classify-section { margin-top: 14px; background: var(--surface-2); border-radius: 10px; padding: 14px; }
+  .classify-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); margin-bottom: 10px; }
+  .classify-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .classify-grid label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
+  .classify-grid select, .classify-grid input[type=text] { width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; font-size: 13px; }
+/* Captured question/option/solution figures */
+.qimg { max-width:100%; max-height:280px; display:block; margin:8px 0; border-radius:6px; background:#fff; padding:4px; box-sizing:border-box; }
+.qimg.thumb { max-height:110px; }
+.option .qimg { margin:4px 0; max-height:150px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Error Logger</h1>
+    <div class="tagline">Log mistakes → flashcard revision → mastery</div>
+  </div>
+  <nav>
+    <button data-view="dashboard" class="active">Dashboard</button>
+    <button data-view="review">Review</button>
+    <button data-view="revision">📗 Revision</button>
+    <button data-view="browse">Browse</button>
+    <button data-view="weights">⚖ Weights</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="view active" id="view-dashboard">
+    <div id="reingest-banner" style="display:none" class="reingest-banner">
+      <div class="ri-msg">💡 <span id="reingest-count"></span> question(s) saved without Ollama categorization.</div>
+      <button class="reingest-btn" id="reingest-btn" onclick="doReingest()">Re-ingest now</button>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <h2 class="section-title">Weak Zones — subtopics to focus on</h2>
+    <div class="wz-card"><h3>Ranked by errors · lowest mastery first</h3><div id="wz-list"></div></div>
+
+    <h2 class="section-title">30-day activity</h2>
+    <div class="chart-card"><h3>Errors logged vs mastered</h3><div class="chart-wrap"><canvas id="trend-chart"></canvas></div></div>
+
+    <div class="dash-grid" id="breakdown"></div>
+  </section>
+
+  <!-- ===== REVIEW ===== -->
+  <section class="view" id="view-review">
+    <div class="review-layout">
+      <div class="filter-panel">
+        <h3>Review Filters</h3>
+        <div class="filter-group">
+          <label>Subject</label>
+          <select id="rv-subject"><option value="">All subjects</option></select>
+        </div>
+        <div class="filter-group">
+          <label>Topic</label>
+          <select id="rv-topic"><option value="">All topics</option></select>
+        </div>
+        <div class="filter-group">
+          <label>Session type</label>
+          <select id="rv-session">
+            <option value="">All</option>
+            <option value="dpps">DPPS only</option>
+            <option value="mock">Mock only</option>
+            <option value="revision">Revision facts only</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Platform</label>
+          <select id="rv-platform">
+            <option value="">All platforms</option>
+            <option value="testbook">Testbook</option>
+            <option value="pw">PW / DPPS</option>
+            <option value="oliveboard">Oliveboard</option>
+            <option value="testranking">TestRanking</option>
+            <option value="quiz">Quiz / Claude</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <div class="check-row">
+            <input type="checkbox" id="rv-flagged">
+            <label for="rv-flagged" style="display:inline;margin:0">Flagged only ⭐</label>
+          </div>
+        </div>
+        <button class="apply-btn" onclick="applyReviewFilters()">Apply &amp; Restart</button>
+      </div>
+      <div class="review-wrap">
+        <div class="review-progress" id="review-progress"></div>
+        <div id="review-content"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== REVISION (separate deck: quiz-derived facts, session_type=revision) ===== -->
+  <section class="view" id="view-revision">
+    <div class="review-wrap" style="max-width:760px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <div>
+          <h2 style="margin:0">📗 Revision Deck</h2>
+          <p style="margin:4px 0 0;font-size:13px;opacity:0.8">Curated facts (quiz misses, notes) — kept separate from your mock/DPP error cards. Same spaced-repetition engine.</p>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="rev-platform-filter" onchange="initRevision()" title="Filter by source">
+            <option value="">All sources</option>
+            <option value="quiz">Quiz / Claude</option>
+          </select>
+        </div>
+      </div>
+      <div class="deck-stats" id="revision-stats"></div>
+      <div class="review-progress" id="revision-progress"></div>
+      <div id="revision-content"></div>
+    </div>
+  </section>
+
+  <!-- ===== WEIGHTS (SSC PYQ weightage config) ===== -->
+  <section class="view" id="view-weights">
+    <div style="max-width:900px;margin:0 auto">
+      <h2 style="margin:0 0 4px">⚖ Subject &amp; Topic Weights</h2>
+      <p style="margin:0 0 14px;font-size:13px;opacity:0.85">Higher weight → that subject/topic's due cards surface <b>more often</b> in Review (weighted-random, nothing is starved). GA weights are seeded from your CGL-2025 PYQ trend report; Quant/Reasoning/English stay neutral at 1.0. Edit any value and press Enter.</p>
+      <div id="weights-content"><p style="opacity:0.7">Loading…</p></div>
+    </div>
+  </section>
+
+  <!-- ===== BROWSE ===== -->
+  <section class="view" id="view-browse">
+    <div class="browse-layout">
+      <div class="browse-sidebar">
+        <h3>Subjects</h3>
+        <div id="subject-tree"></div>
+      </div>
+      <div>
+        <div class="browse-filters">
+          <select id="br-session" onchange="refreshCards()">
+            <option value="">All sessions</option>
+            <option value="dpps">DPPS</option>
+            <option value="mock">Mock</option>
+            <option value="revision">Revision facts</option>
+          </select>
+          <label><input type="checkbox" id="br-flagged" onchange="refreshCards()"> Flagged ⭐</label>
+        </div>
+        <div class="breadcrumb" id="breadcrumb"></div>
+        <div class="card-list" id="card-list"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+const API = '';
+let trendChart = null;
+
+// ===================== VIEW SWITCHING =====================
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    const v = btn.dataset.view;
+    document.getElementById('view-' + v).classList.add('active');
+    if (v === 'dashboard') loadDashboard();
+    else if (v === 'review') initReviewFilters();
+    else if (v === 'revision') initRevision();
+    else if (v === 'browse') loadBrowse();
+    else if (v === 'weights') loadWeights();
+  };
+});
+
+// ===================== REINGEST / RECLEAN =====================
+async function doReingest() {
+  const btn = document.getElementById('reingest-btn');
+  btn.disabled = true;
+  btn.textContent = 'Re-ingesting…';
+  try {
+    const res = await fetch(API + '/api/reingest', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      alert('Re-ingest failed: ' + (data.detail || res.statusText));
+    } else {
+      alert(`Done! Updated ${data.updated} of ${data.total} question(s).${data.failed ? ` ${data.failed} failed (Ollama returned no useful data).` : ''}`);
+      await loadDashboard();
+    }
+  } catch (e) {
+    alert('Re-ingest error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Re-ingest now';
+  }
+}
+
+// ===================== DASHBOARD =====================
+async function loadDashboard() {
+  const [s, wz, tr] = await Promise.all([
+    fetch(API + '/api/stats').then(r => r.json()),
+    fetch(API + '/api/weakzones?limit=8').then(r => r.json()),
+    fetch(API + '/api/trends?days=30').then(r => r.json()),
+  ]);
+
+  // Re-ingest banner: uncategorized questions
+  const uncatCount = (s.by_subject.find(r => r.subject === 'Other') || {}).count || 0;
+  const banner = document.getElementById('reingest-banner');
+  const countEl = document.getElementById('reingest-count');
+  if (uncatCount > 0) {
+    countEl.textContent = uncatCount;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="label">Total Errors</div><div class="value grad">${s.total}</div></div>
+    <div class="stat-card"><div class="label">Due for Review</div><div class="value" style="color:var(--warn)">${s.pending_review}</div></div>
+    <div class="stat-card"><div class="label">Mastered</div><div class="value" style="color:var(--ok)">${s.mastered}</div></div>
+    <div class="stat-card"><div class="label">Mastery %</div><div class="value">${s.total ? Math.round(s.mastered/s.total*100) : 0}%</div></div>
+  `;
+
+  // Weak zones
+  const wzList = document.getElementById('wz-list');
+  if (!wz.weakzones.length) {
+    wzList.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">No subtopic data yet</div>';
+  } else {
+    wzList.innerHTML = wz.weakzones.map(z => `
+      <div class="wz-row">
+        <div class="wz-name" title="${esc(z.subject)} › ${esc(z.topic)} › ${esc(z.subtopic)}">${esc(z.subtopic)}<span style="color:var(--muted);font-size:11px"> · ${esc(z.topic)}</span></div>
+        <div class="wz-bar-wrap"><div class="wz-bar" style="width:${Math.min(100, z.mastery_pct || 0)}%"></div></div>
+        <div class="wz-pct">${z.mastery_pct || 0}%</div>
+        <div class="wz-total">${z.total}</div>
+      </div>`).join('');
+  }
+
+  // Trend chart
+  renderTrendChart(tr);
+
+  // Breakdown
+  document.getElementById('breakdown').innerHTML = `
+    <div class="bd-card">
+      <h3>By Subject</h3>
+      ${s.by_subject.map(r => `<div class="bd-row"><span>${esc(r.subject||'Uncategorized')}</span><span class="count">${r.count}</span></div>`).join('') || noData()}
+    </div>
+    <div class="bd-card">
+      <h3>Top Weak Topics</h3>
+      ${s.top_topics.map(r => `<div class="bd-row"><span>${esc(r.topic)}</span><span class="count">${r.count}</span></div>`).join('') || noData()}
+    </div>
+    <div class="bd-card">
+      <h3>Mistake Types</h3>
+      ${s.by_mistake_type.map(r => `<div class="bd-row"><span>${fmtMistake(r.mistake_type)}</span><span class="count">${r.count}</span></div>`).join('') || noData()}
+    </div>
+  `;
+}
+
+function renderTrendChart(tr) {
+  // Build a unified date range
+  const allDates = new Set([...tr.logged.map(r=>r.d), ...tr.mastered.map(r=>r.d)]);
+  const dates = Array.from(allDates).sort();
+  const logMap = Object.fromEntries(tr.logged.map(r => [r.d, r.n]));
+  const mastMap = Object.fromEntries(tr.mastered.map(r => [r.d, r.n]));
+
+  if (trendChart) trendChart.destroy();
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        { label: 'Logged', data: dates.map(d => logMap[d]||0), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true, pointRadius: 3 },
+        { label: 'Mastered', data: dates.map(d => mastMap[d]||0), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, pointRadius: 3 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8a8aa0', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#8a8aa0', font: { size: 10 }, maxTicksLimit: 10 }, grid: { color: '#2a2a3e' } },
+        y: { ticks: { color: '#8a8aa0', font: { size: 10 } }, grid: { color: '#2a2a3e' }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+// ===================== REVIEW =====================
+let currentCard = null;
+let reviewDone = 0;
+let reviewFilters = {};
+// Which UI panel the review engine renders into. The Review tab and the
+// Revision tab share one engine; only the target containers differ.
+let currentDeck = { contentId: 'review-content', progressId: 'review-progress' };
+
+async function initReviewFilters() {
+  currentDeck = { contentId: 'review-content', progressId: 'review-progress' };
+  const s = await fetch(API + '/api/stats').then(r => r.json());
+  const subSel = document.getElementById('rv-subject');
+  subSel.innerHTML = '<option value="">All subjects</option>' +
+    s.by_subject.map(r => `<option value="${esc(r.subject)}">${esc(r.subject)}</option>`).join('');
+  subSel.onchange = async () => {
+    const subject = subSel.value;
+    const topSel = document.getElementById('rv-topic');
+    topSel.innerHTML = '<option value="">All topics</option>';
+    if (subject) {
+      const td = await fetch(API + `/api/browse/topics?subject=${encodeURIComponent(subject)}`).then(r => r.json());
+      td.topics.forEach(t => {
+        const o = document.createElement('option');
+        o.value = t.topic; o.textContent = t.topic;
+        topSel.appendChild(o);
+      });
+    }
+  };
+  reviewFilters = {};
+  reviewDone = 0;
+  await fetchNextCard();
+}
+
+async function applyReviewFilters() {
+  reviewFilters = {
+    subject: document.getElementById('rv-subject').value,
+    topic: document.getElementById('rv-topic').value,
+    session_type: document.getElementById('rv-session').value,
+    platform: document.getElementById('rv-platform').value,
+    flagged_only: document.getElementById('rv-flagged').checked,
+  };
+  reviewDone = 0;
+  await fetchNextCard();
+}
+
+async function fetchNextCard() {
+  const qs = new URLSearchParams();
+  if (reviewFilters.subject) qs.set('subject', reviewFilters.subject);
+  if (reviewFilters.topic) qs.set('topic', reviewFilters.topic);
+  if (reviewFilters.session_type) qs.set('session_type', reviewFilters.session_type);
+  if (reviewFilters.platform) qs.set('platform', reviewFilters.platform);
+  if (reviewFilters.flagged_only) qs.set('flagged_only', 'true');
+  const data = await fetch(API + '/api/review/next?' + qs).then(r => r.json());
+  currentCard = data.card;
+  renderCard();
+}
+
+function renderCard() {
+  const wrap = document.getElementById(currentDeck.contentId);
+  document.getElementById(currentDeck.progressId).textContent = `Reviewed this session: ${reviewDone}`;
+
+  if (!currentCard) {
+    wrap.innerHTML = `<div class="empty-state"><div class="emoji">🎉</div><h2>Nothing due right now!</h2><p style="margin-top:8px;font-size:13px">Change filters or come back later.</p></div>`;
+    return;
+  }
+
+  const c = currentCard;
+  const opts = c.options || [];
+  const notes = c.notes || {};
+
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="card-meta">
+        <span class="tag subject">${esc(c.subject||'Other')}</span>
+        ${c.topic ? `<span class="tag">${esc(c.topic)}</span>` : ''}
+        ${c.subtopic ? `<span class="tag">${esc(c.subtopic)}</span>` : ''}
+        ${c.session_type ? `<span class="tag ${c.session_type}">${c.session_type.toUpperCase()}</span>` : ''}
+        ${c.session_type === 'revision' ? '' : `<span class="tag mistake-${c.mistake_type}">${fmtMistake(c.mistake_type)}</span>`}
+        ${c.flagged ? '<span class="tag flagged">⭐ Flagged</span>' : ''}
+        ${(c.weight != null && c.weight !== 1) ? `<span class="tag weight" title="SSC PYQ weight — higher = surfaces more often">⚖ ${c.weight}×</span>` : ''}
+      </div>
+
+      <div class="question">${mathify(stripImgTokens(c.question_text, (c.question_images||[]).length))}${imgHtml(c.question_images)}</div>
+      ${opts.length ? `<div class="options">${opts.map((o, i) => {
+        const oi = (c.option_images||[])[i] || [];
+        return `<div class="option" data-opt="${esc(o)}">${mathify(stripImgTokens(o, oi.length))}${imgHtml(oi)}</div>`;
+      }).join('')}</div>` : ''}
+
+      <button class="reveal-btn" id="reveal-btn">Show Answer &amp; Solution</button>
+
+      <div id="reveal-area" class="hidden">
+        <div class="answer-row">
+          ${c.session_type === 'revision' ? '' : `<div class="answer-box your"><div class="lbl">Your answer</div>${mathify(c.your_answer||'—')}</div>`}
+          <div class="answer-box correct"><div class="lbl">${c.session_type === 'revision' ? 'Answer' : 'Correct answer'}</div>${mathify(c.correct_answer||'—')}</div>
+        </div>
+        <div class="solution">${mathify(stripImgTokens(c.solution_text, (c.solution_images||[]).length) || (((c.solution_images||[]).length) ? '' : 'No solution captured.'))}${imgHtml(c.solution_images)}</div>
+        ${sourceLinkHtml(c)}
+
+        <div class="notes-section">
+          <h4>My Notes</h4>
+          <div class="notes-grid">
+            <div><label>My mistake was:</label><textarea id="note-mistake" rows="2">${esc(notes.my_mistake||'')}</textarea></div>
+            <div><label>Key rule to remember:</label><textarea id="note-remember" rows="2">${esc(notes.remember_this||'')}</textarea></div>
+            <div><label>Formula / shortcut:</label><textarea id="note-formula" rows="2">${esc(notes.formula||'')}</textarea></div>
+          </div>
+          <button class="notes-save-btn" onclick="saveNotes(${c.id})">Save notes</button>
+        </div>
+
+        ${classifyHtml(c, 'rv-cl')}
+
+        <div class="card-actions">
+          <button class="flag-btn${c.flagged ? ' active' : ''}" id="flag-btn" onclick="toggleFlag(${c.id})">
+            ${c.flagged ? '⭐ Flagged' : '☆ Flag'}
+          </button>
+          <button class="flag-btn" id="restructure-btn" onclick="restructureCard(${c.id})" title="Re-run AI to fix scrambled math text (~30s)">🔧 Restructure</button>
+          <div class="review-actions">
+            <button class="btn-again" onclick="rateCard(0)">Again<span class="btn-small">Forgot</span></button>
+            <button class="btn-hard" onclick="rateCard(1)">Hard<span class="btn-small">Struggled</span></button>
+            <button class="btn-good" onclick="rateCard(2)">Good<span class="btn-small">Recalled</span></button>
+            <button class="btn-easy" onclick="rateCard(3)">Easy<span class="btn-small">Trivial</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('reveal-btn').onclick = () => {
+    document.getElementById('reveal-btn').classList.add('hidden');
+    document.getElementById('reveal-area').classList.remove('hidden');
+    // Highlight options: green = correct, red = what you picked
+    const norm = s => String(s || '').trim().toLowerCase();
+    const normYour = norm(c.your_answer);
+    const normCorrect = norm(c.correct_answer);
+    document.querySelectorAll('#' + currentDeck.contentId + ' .option').forEach(el => {
+      const text = norm(el.dataset.opt || el.textContent);
+      if (normCorrect && (text.includes(normCorrect) || normCorrect.includes(text))) el.classList.add('correct');
+      if (normYour && (text.includes(normYour) || normYour.includes(text))) el.classList.add('your');
+    });
+  };
+  typeset(wrap);
+}
+
+async function saveNotes(id) {
+  const payload = {
+    my_mistake: document.getElementById('note-mistake').value,
+    remember_this: document.getElementById('note-remember').value,
+    formula: document.getElementById('note-formula').value,
+  };
+  const res = await fetch(API + '/api/errors/' + id + '/notes', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const btn = document.querySelector('.notes-save-btn');
+  if (!res.ok) {
+    if (btn) { btn.textContent = 'Save failed ✕'; setTimeout(() => { btn.textContent = 'Save notes'; }, 2000); }
+    return;
+  }
+  // Keep the in-memory card in sync so the notes survive a re-render.
+  if (currentCard && currentCard.id === id) currentCard.notes = payload;
+  if (btn) { btn.textContent = 'Saved ✓'; setTimeout(() => { btn.textContent = 'Save notes'; }, 1500); }
+}
+
+async function toggleFlag(id) {
+  const res = await fetch(API + '/api/errors/' + id + '/flag', { method: 'PATCH' }).then(r => r.json());
+  if (currentCard) currentCard.flagged = res.flagged;
+  const btn = document.getElementById('flag-btn');
+  if (btn) {
+    btn.textContent = res.flagged ? '⭐ Flagged' : '☆ Flag';
+    btn.classList.toggle('active', !!res.flagged);
+  }
+}
+
+async function rateCard(quality) {
+  await fetch(API + '/api/review/rate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ error_id: currentCard.id, quality }),
+  });
+  reviewDone++;
+  if (currentDeck.contentId === 'revision-content') await refreshRevisionStats();
+  await fetchNextCard();
+}
+
+// ===================== REVISION DECK =====================
+// Reuses the review engine (renderCard/rateCard/fetchNextCard) but locks the
+// filter to session_type='revision' and renders into its own containers.
+async function initRevision() {
+  currentDeck = { contentId: 'revision-content', progressId: 'revision-progress' };
+  const plat = (document.getElementById('rev-platform-filter') || {}).value || '';
+  reviewFilters = { session_type: 'revision' };
+  if (plat) reviewFilters.platform = plat;
+  reviewDone = 0;
+  await refreshRevisionStats();
+  await fetchNextCard();
+}
+
+async function refreshRevisionStats() {
+  const qs = new URLSearchParams({ session_type: 'revision' });
+  if (reviewFilters.platform) qs.set('platform', reviewFilters.platform);
+  const el = document.getElementById('revision-stats');
+  if (!el) return;
+  try {
+    const s = await fetch(API + '/api/deck/stats?' + qs).then(r => r.json());
+    el.innerHTML =
+      `<span class="ds-pill total">Total <b>${s.total}</b></span>` +
+      `<span class="ds-pill due">Due now <b>${s.due}</b></span>` +
+      `<span class="ds-pill mastered">Mastered <b>${s.mastered}</b></span>`;
+  } catch (e) { el.textContent = ''; }
+}
+
+// ===================== WEIGHTS =====================
+async function loadWeights() {
+  const data = await fetch(API + '/api/weights').then(r => r.json());
+  const wrap = document.getElementById('weights-content');
+  const ga = data.subjects.filter(s => s.is_ga);
+  const other = data.subjects.filter(s => !s.is_ga);
+
+  const subjRow = s => `
+    <tr>
+      <td>${esc(s.subject)}</td>
+      <td style="text-align:center">${s.pyq_share ? s.pyq_share.toFixed(1) + '%' : '—'}</td>
+      <td style="text-align:center;opacity:0.7">${s.card_count || 0}</td>
+      <td style="text-align:right">
+        <input class="w-input" type="number" step="0.1" min="0" value="${s.weight}"
+          onchange="saveWeight('subject', ${JSON.stringify(s.subject)}, null, this.value, this)">
+      </td>
+    </tr>`;
+
+  const topicRow = t => `
+    <tr>
+      <td>${esc(t.subject)}</td>
+      <td>${esc(t.topic)}</td>
+      <td style="text-align:right">
+        <input class="w-input" type="number" step="0.1" min="0" value="${t.weight}"
+          onchange="saveWeight('topic', ${JSON.stringify(t.subject)}, ${JSON.stringify(t.topic)}, this.value, this)">
+      </td>
+    </tr>`;
+
+  wrap.innerHTML = `
+    <div class="weights-grid">
+      <div class="w-panel">
+        <h3>GA subjects <span class="w-hint">(seeded from PYQ share)</span></h3>
+        <table class="w-table">
+          <thead><tr><th>Subject</th><th>PYQ share</th><th>Cards</th><th>Weight</th></tr></thead>
+          <tbody>${ga.map(subjRow).join('')}</tbody>
+        </table>
+      </div>
+      <div class="w-panel">
+        <h3>Topic overrides <span class="w-hint">(beats subject weight)</span></h3>
+        <table class="w-table">
+          <thead><tr><th>Subject</th><th>Topic</th><th>Weight</th></tr></thead>
+          <tbody>${data.topics.map(topicRow).join('')}</tbody>
+        </table>
+        <p class="w-hint" style="margin-top:8px">Modern History (Freedom Struggle) is boosted highest, as it's the top-yield History bucket.</p>
+      </div>
+      <div class="w-panel">
+        <h3>Other sections <span class="w-hint">(neutral, not GA)</span></h3>
+        <table class="w-table">
+          <thead><tr><th>Section</th><th>PYQ share</th><th>Cards</th><th>Weight</th></tr></thead>
+          <tbody>${other.map(subjRow).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    <div id="weights-toast" class="w-toast"></div>`;
+}
+
+async function saveWeight(kind, subject, topic, weight, el) {
+  const w = parseFloat(weight);
+  if (isNaN(w) || w < 0) { if (el) el.value = '1'; return; }
+  const res = await fetch(API + '/api/weights', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind, subject, topic, weight: w }),
+  });
+  const toast = document.getElementById('weights-toast');
+  if (toast) {
+    toast.textContent = res.ok
+      ? `Saved: ${topic || subject} → ${w}×`
+      : 'Save failed';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1600);
+  }
+  if (el) { el.classList.add('saved'); setTimeout(() => el.classList.remove('saved'), 900); }
+}
+
+// ===================== BROWSE =====================
+let browseSubject = '', browseTopic = '', browseSubtopic = '';
+
+async function loadBrowse() {
+  browseSubject = ''; browseTopic = ''; browseSubtopic = '';
+  const data = await fetch(API + '/api/browse/subjects').then(r => r.json());
+  const tree = document.getElementById('subject-tree');
+  tree.innerHTML = data.subjects.map(s => `
+    <div class="tree-item" onclick="selectSubject('${esc(s.subject)}')">
+      <span>${esc(s.subject)}</span>
+      <span style="display:flex;gap:4px;align-items:center">
+        ${s.dpps ? `<span class="pill dpps">${s.dpps}D</span>` : ''}
+        ${s.mock ? `<span class="pill mock">${s.mock}M</span>` : ''}
+        <span class="cnt">${s.total}</span>
+      </span>
+    </div>
+    <div class="tree-sub" id="sub-${slugify(s.subject)}"></div>
+  `).join('');
+  updateBreadcrumb();
+  await refreshCards();
+}
+
+async function selectSubject(subject) {
+  browseSubject = subject; browseTopic = ''; browseSubtopic = '';
+  // Collapse all sub-trees, expand this one
+  document.querySelectorAll('.tree-sub').forEach(el => el.innerHTML = '');
+  document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+
+  const data = await fetch(API + `/api/browse/topics?subject=${encodeURIComponent(subject)}`).then(r => r.json());
+  const container = document.getElementById('sub-' + slugify(subject));
+  if (container) {
+    container.innerHTML = data.topics.map(t => `
+      <div class="tree-item" onclick="selectTopic('${esc(subject)}','${esc(t.topic)}')">
+        <span>${esc(t.topic)}</span>
+        <span style="display:flex;gap:4px;align-items:center">
+          ${t.dpps ? `<span class="pill dpps">${t.dpps}D</span>` : ''}
+          ${t.mock ? `<span class="pill mock">${t.mock}M</span>` : ''}
+          <span class="cnt">${t.total}</span>
+        </span>
+      </div>
+      <div class="tree-subsub" id="subsub-${slugify(subject)}-${slugify(t.topic)}"></div>
+    `).join('');
+  }
+  // Mark active
+  document.querySelectorAll('.tree-item').forEach(el => {
+    if (el.textContent.trim().startsWith(subject)) el.classList.add('active');
+  });
+  updateBreadcrumb();
+  await refreshCards();
+}
+
+async function selectTopic(subject, topic) {
+  browseSubject = subject; browseTopic = topic; browseSubtopic = '';
+  document.querySelectorAll('.tree-subsub').forEach(el => el.innerHTML = '');
+
+  const data = await fetch(API + `/api/browse/subtopics?subject=${encodeURIComponent(subject)}&topic=${encodeURIComponent(topic)}`).then(r => r.json());
+  const container = document.getElementById('subsub-' + slugify(subject) + '-' + slugify(topic));
+  if (container && data.subtopics.length) {
+    container.innerHTML = data.subtopics.map(st => `
+      <div class="tree-item" onclick="selectSubtopic('${esc(subject)}','${esc(topic)}','${esc(st.subtopic)}')">
+        <span>${esc(st.subtopic)}</span>
+        <span class="cnt">${st.total}</span>
+      </div>
+    `).join('');
+  }
+  updateBreadcrumb();
+  await refreshCards();
+}
+
+async function selectSubtopic(subject, topic, subtopic) {
+  browseSubject = subject; browseTopic = topic; browseSubtopic = subtopic;
+  updateBreadcrumb();
+  await refreshCards();
+}
+
+function updateBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  const parts = [{ label: 'All', fn: () => { browseSubject=''; browseTopic=''; browseSubtopic=''; updateBreadcrumb(); refreshCards(); } }];
+  if (browseSubject) parts.push({ label: browseSubject, fn: () => selectSubject(browseSubject) });
+  if (browseTopic) parts.push({ label: browseTopic, fn: () => selectTopic(browseSubject, browseTopic) });
+  if (browseSubtopic) parts.push({ label: browseSubtopic, fn: null });
+  bc.innerHTML = parts.map((p, i) =>
+    i < parts.length - 1
+      ? `<span class="crumb" data-i="${i}">${esc(p.label)}</span><span class="sep">›</span>`
+      : `<span>${esc(p.label)}</span>`
+  ).join('');
+  bc.querySelectorAll('.crumb').forEach((el, i) => { el.onclick = parts[i].fn; });
+}
+
+async function refreshCards() {
+  const qs = new URLSearchParams();
+  if (browseSubject) qs.set('subject', browseSubject);
+  if (browseTopic) qs.set('topic', browseTopic);
+  if (browseSubtopic) qs.set('subtopic', browseSubtopic);
+  const sess = document.getElementById('br-session')?.value;
+  if (sess) qs.set('session_type', sess);
+  if (document.getElementById('br-flagged')?.checked) qs.set('flagged_only', 'true');
+
+  const data = await fetch(API + '/api/browse/cards?' + qs).then(r => r.json());
+  const wrap = document.getElementById('card-list');
+  if (!data.cards.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="emoji">📭</div>No errors here yet.</div>';
+    return;
+  }
+  wrap.innerHTML = data.cards.map(e => `
+    <div class="card-item" onclick="openDetail(${e.id})">
+      <div class="qtext">${mathify(stripImgTokens(e.question_text, (e.question_images||[]).length))}${imgHtml(e.question_images, 'qimg thumb')}</div>
+      <div class="meta-row">
+        <span class="tag subject">${esc(e.subject||'')}</span>
+        ${e.topic ? `<span class="tag">${esc(e.topic)}</span>` : ''}
+        ${e.session_type ? `<span class="tag ${e.session_type}">${e.session_type.toUpperCase()}</span>` : ''}
+        <span class="tag mistake-${e.mistake_type}">${fmtMistake(e.mistake_type)}</span>
+        ${e.flagged ? '<span class="tag flagged">⭐</span>' : ''}
+        ${e.mastered ? '<span class="tag" style="background:var(--ok)">✓ Mastered</span>' : ''}
+        <button class="tag" style="background:var(--surface);border:1px solid var(--border);cursor:pointer;margin-left:auto"
+          onclick="event.stopPropagation(); restructureBrowseCard(${e.id}, this)" title="Re-run AI to fix scrambled text (~30s)">🔧</button>
+      </div>
+    </div>
+  `).join('');
+  typeset(wrap);
+}
+
+// ===================== DETAIL MODAL =====================
+async function openDetail(id) {
+  const e = await fetch(API + '/api/errors/' + id).then(r => r.json());
+  if (!e || !e.id) return;
+  const opts = e.options || [];
+  const notes = e.notes || {};
+
+  document.getElementById('modal-content').innerHTML = `
+    <span class="close" onclick="document.getElementById('modal-bg').classList.remove('open')">✕</span>
+    <div class="card-meta" style="margin-bottom:14px">
+      <span class="tag subject">${esc(e.subject)}</span>
+      ${e.topic ? `<span class="tag">${esc(e.topic)}</span>` : ''}
+      ${e.subtopic ? `<span class="tag">${esc(e.subtopic)}</span>` : ''}
+      ${e.session_type ? `<span class="tag ${e.session_type}">${e.session_type.toUpperCase()}</span>` : ''}
+      <span class="tag mistake-${e.mistake_type}">${fmtMistake(e.mistake_type)}</span>
+      ${e.flagged ? '<span class="tag flagged">⭐ Flagged</span>' : ''}
+    </div>
+    <div class="question">${mathify(stripImgTokens(e.question_text, (e.question_images||[]).length))}${imgHtml(e.question_images)}</div>
+    ${opts.length ? `<div class="options" style="margin:14px 0">${opts.map((o, i) => {
+      const norm = s => String(s || '').trim().toLowerCase();
+      const t = norm(o);
+      const yr = norm(e.your_answer);
+      const cr = norm(e.correct_answer);
+      const isCorrect = cr && (t.includes(cr) || cr.includes(t));
+      const isYour = yr && (t.includes(yr) || yr.includes(t));
+      const oi = (e.option_images||[])[i] || [];
+      return `<div class="option${isCorrect ? ' correct' : ''}${isYour ? ' your' : ''}">${mathify(stripImgTokens(o, oi.length))}${imgHtml(oi)}</div>`;
+    }).join('')}</div>` : ''}
+    <div class="answer-row">
+      <div class="answer-box your"><div class="lbl">Your answer</div>${mathify(e.your_answer||'—')}</div>
+      <div class="answer-box correct"><div class="lbl">Correct</div>${mathify(e.correct_answer||'—')}</div>
+    </div>
+    <div class="solution">${mathify(stripImgTokens(e.solution_text, (e.solution_images||[]).length))}${imgHtml(e.solution_images)}</div>
+    ${sourceLinkHtml(e)}
+
+    <div class="notes-section" style="margin-top:14px">
+      <h4>My Notes</h4>
+      <div class="notes-grid">
+        <div><label>My mistake was:</label><textarea id="mnote-mistake" rows="2">${esc(notes.my_mistake||'')}</textarea></div>
+        <div><label>Key rule to remember:</label><textarea id="mnote-remember" rows="2">${esc(notes.remember_this||'')}</textarea></div>
+        <div><label>Formula / shortcut:</label><textarea id="mnote-formula" rows="2">${esc(notes.formula||'')}</textarea></div>
+      </div>
+      <button class="notes-save-btn" onclick="saveModalNotes(${e.id})">Save notes</button>
+    </div>
+
+    ${classifyHtml(e, 'm-cl')}
+
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="flag-btn${e.flagged?' active':''}" id="modal-flag-btn" onclick="toggleModalFlag(${e.id}, this)">
+        ${e.flagged ? '⭐ Flagged' : '☆ Flag'}
+      </button>
+      <button class="flag-btn" id="modal-restructure-btn" onclick="restructureModal(${e.id})" title="Re-run AI to fix scrambled math text (~30s)">🔧 Restructure</button>
+      <button style="padding:8px 14px;border-radius:8px;border:none;background:var(--bad);color:white;cursor:pointer;font-size:13px" onclick="deleteErr(${e.id})">Delete</button>
+    </div>
+  `;
+  document.getElementById('modal-bg').classList.add('open');
+  typeset(document.getElementById('modal-content'));
+}
+
+async function saveModalNotes(id) {
+  const payload = {
+    my_mistake: document.getElementById('mnote-mistake').value,
+    remember_this: document.getElementById('mnote-remember').value,
+    formula: document.getElementById('mnote-formula').value,
+  };
+  const res = await fetch(API + '/api/errors/' + id + '/notes', {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const btn = document.querySelector('#modal-content .notes-save-btn');
+  if (!res.ok) {
+    if (btn) { btn.textContent = 'Save failed ✕'; setTimeout(() => { btn.textContent = 'Save notes'; }, 2000); }
+    return;
+  }
+  // Keep the in-memory card in sync so the notes survive a re-render.
+  if (currentCard && currentCard.id === id) currentCard.notes = payload;
+  if (btn) { btn.textContent = 'Saved ✓'; setTimeout(() => { btn.textContent = 'Save notes'; }, 1500); }
+}
+
+async function toggleModalFlag(id, btn) {
+  const res = await fetch(API + '/api/errors/' + id + '/flag', { method: 'PATCH' }).then(r => r.json());
+  btn.textContent = res.flagged ? '⭐ Flagged' : '☆ Flag';
+  btn.classList.toggle('active', !!res.flagged);
+  refreshCards();
+}
+
+async function restructureBrowseCard(id, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const res = await fetch(API + '/api/errors/' + id + '/reclean', { method: 'POST' });
+    if (!res.ok) { const d = await res.json(); alert('Failed: ' + (d.detail || res.statusText)); return; }
+    await refreshCards();  // re-render the list with updated question text
+  } catch (e) {
+    alert('Restructure error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🔧';
+  }
+}
+
+async function restructureCard(id) {
+  const btn = document.getElementById('restructure-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running AI…';
+  try {
+    const res = await fetch(API + '/api/errors/' + id + '/reclean', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { alert('Restructure failed: ' + (data.detail || res.statusText)); return; }
+    // Refresh the current card in-place with the updated data
+    currentCard = data;
+    renderCard();
+  } catch (e) {
+    alert('Restructure error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🔧 Restructure';
+  }
+}
+
+async function restructureModal(id) {
+  const btn = document.getElementById('modal-restructure-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running AI…';
+  try {
+    const res = await fetch(API + '/api/errors/' + id + '/reclean', { method: 'POST' });
+    if (!res.ok) { const d = await res.json(); alert('Restructure failed: ' + (d.detail || res.statusText)); return; }
+    // Re-open the modal with fresh data
+    await openDetail(id);
+  } catch (e) {
+    alert('Restructure error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🔧 Restructure';
+  }
+}
+
+async function deleteErr(id) {
+  if (!confirm('Delete this logged error?')) return;
+  await fetch(API + '/api/errors/' + id, { method: 'DELETE' });
+  document.getElementById('modal-bg').classList.remove('open');
+  refreshCards();
+}
+
+document.getElementById('modal-bg').onclick = e => {
+  if (e.target.id === 'modal-bg') e.target.classList.remove('open');
+};
+
+// ===================== CLASSIFY =====================
+const SUBJECTS = ['Quantitative Aptitude','Reasoning','English','Economics','History','Geography','Polity','General Awareness','Computer Science','Biology','Chemistry','Physics','Other'];
+const MISTAKE_LABELS = {concept_gap:'🔴 Concept Gap',silly_mistake:'🟡 Silly Mistake',tricky_option:'🟣 Tricky Option',formula_confusion:'🔵 Formula Confusion',time_pressure:'⏱ Time Pressure',unknown:'❓ Unknown'};
+
+function classifyHtml(e, pfx) {
+  return `
+    <div class="classify-section">
+      <h4>✏️ Edit Classification</h4>
+      <div class="classify-grid">
+        <div>
+          <label>Subject</label>
+          <select id="${pfx}-subject">
+            ${SUBJECTS.map(s => `<option value="${esc(s)}"${s===e.subject?' selected':''}>${esc(s)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Mistake type</label>
+          <select id="${pfx}-mistake">
+            ${Object.entries(MISTAKE_LABELS).map(([v,l])=>`<option value="${v}"${v===e.mistake_type?' selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Topic</label>
+          <input type="text" id="${pfx}-topic" value="${esc(e.topic||'')}" placeholder="e.g. Characteristics of Money">
+        </div>
+        <div>
+          <label>Subtopic</label>
+          <input type="text" id="${pfx}-subtopic" value="${esc(e.subtopic||'')}" placeholder="e.g. Functions of money">
+        </div>
+      </div>
+      <button class="notes-save-btn" onclick="saveClassify(${e.id},'${pfx}',this)">Save classification</button>
+    </div>`;
+}
+
+async function saveClassify(id, pfx, btn) {
+  const payload = {
+    subject: document.getElementById(pfx+'-subject').value,
+    topic: document.getElementById(pfx+'-topic').value,
+    subtopic: document.getElementById(pfx+'-subtopic').value,
+    mistake_type: document.getElementById(pfx+'-mistake').value,
+  };
+  await fetch(API+'/api/errors/'+id+'/classify', {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload),
+  });
+  if (btn) { btn.textContent = 'Saved ✓'; setTimeout(() => { btn.textContent = 'Save classification'; }, 1500); }
+  if (currentCard && currentCard.id === id) Object.assign(currentCard, payload);
+}
+
+// ===================== UTILS =====================
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+// Link back to the original question on the source platform. Prefers the
+// per-question deep link (source_url, new captures) and falls back to the
+// test page (test_url, older rows). Scheme whitelist keeps a poisoned DB
+// value from becoming a javascript: href.
+function sourceLinkHtml(c) {
+  const url = c.source_url || c.test_url || '';
+  if (!/^https?:\/\//i.test(url)) return '';
+  const label = c.source_url ? '📍 View original question' : '📍 View original test';
+  return `<div style="margin:10px 0"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:var(--accent,#4f8ef7);text-decoration:none">${label} ↗</a></div>`;
+}
+// HTML-escape, then wrap math-looking fragments in \( \) so KaTeX renders them as
+// real fractions/exponents instead of showing raw "15\frac{78}{255}" or "78/255".
+function mathify(s) {
+  const e = esc(s);
+  if (!/[\\^_]|\d+\s*\/\s*\d+/.test(e)) return e; // no math markup → plain text
+  // Already delimited? leave it for the auto-renderer.
+  if (/\$.+\$|\\\(.+\\\)/.test(e)) return e;
+  return e.replace(
+    // a LaTeX command w/ its brace args (\frac{..}{..}, \sqrt{..}, \times),
+    // OR base^exp / base_sub, OR a bare numeric fraction like 78/255.
+    /\\[a-zA-Z]+(?:\s*\{[^{}]*\}){0,3}|\d+(?:\.\d+)?\s*[\^_]\s*\{?[\d.]+\}?|\d+\s*\/\s*\d+/g,
+    m => `\\(${m}\\)`
+  );
+}
+// Render any \( \) / $ $ math inside a container after its HTML is set.
+// Question figures / image options / solution diagrams captured by the extension.
+// The server stores local /images/ paths (original CDN URL kept as fallback).
+function imgHtml(urls, cls) {
+  if (!urls || !urls.length) return '';
+  return urls.map(u => `<img class="${cls || 'qimg'}" src="${esc(u)}" loading="lazy" alt="figure">`).join('');
+}
+// Remove "[Image: file.png]" placeholder tokens from text when the real image is
+// rendered right next to it (keep them when no image was captured — they still
+// signal that a figure exists).
+function stripImgTokens(s, hasImgs) {
+  if (!hasImgs) return s;
+  return String(s || '').replace(/\s*\[Image:[^\]]*\]\s*/g, ' ').trim();
+}
+
+function typeset(root) {
+  if (root && window.renderMathInElement) {
+    try {
+      renderMathInElement(root, {
+        delimiters: [
+          { left: '\\(', right: '\\)', display: false },
+          { left: '$', right: '$', display: false },
+        ],
+        throwOnError: false,
+        ignoredClasses: ['tag', 'pill'],
+      });
+    } catch (e) { /* never let a math glitch break the page */ }
+  }
+}
+function slugify(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g, '-'); }
+function noData() { return '<div class="bd-row" style="color:var(--muted)">No data yet</div>'; }
+function fmtMistake(t) {
+  return { concept_gap:'🔴 Concept Gap', silly_mistake:'🟡 Silly Mistake', tricky_option:'🟣 Tricky Option', formula_confusion:'🔵 Formula Confusion', time_pressure:'⏱ Time Pressure', unknown:'❓ Unknown' }[t] || t;
+}
+
+// Init
+loadDashboard();
+setInterval(() => {
+  if (document.getElementById('view-dashboard').classList.contains('active')) loadDashboard();
+}, 30000);
+</script>
+</body>
+</html>

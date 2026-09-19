@@ -1,0 +1,42 @@
+ERROR LOGGER  -  quick start
+============================
+
+What it does: after a mock test, one click grabs every question you got wrong or
+skipped, an AI sorts them by subject / topic / type of mistake, and they become
+flashcards on a spaced-repetition schedule. All on your own PC.
+Works on Testbook, Physics Wallah, Oliveboard and TestRanking.
+
+
+INSTALL  (5-15 minutes, mostly downloading)
+-------------------------------------------
+1. Unzip this whole folder first - don't run anything from inside the zip.
+2. Double-click  Install.bat
+3. Blue "Windows protected your PC" box?  More info -> Run anyway.
+4. Two questions come up. Pressing Enter picks the right option both times.
+5. At the end Chrome opens its extensions page. Do these four things:
+      - turn ON  "Developer mode"   (top-right toggle)
+      - click    "Load unpacked"
+      - press Ctrl+V (the folder path is already on your clipboard), Enter
+      - click    "Select Folder", then pin the extension (puzzle icon)
+
+No admin rights needed. Nothing is installed system-wide.
+
+
+DAILY USE
+---------
+1. Leave the small black console window open. If it is closed, use the
+   "Testbook Error Logger" shortcut on your Desktop.
+2. Finish your mock, open the solution / analysis page.
+3. Click the floating  "Log Mistakes"  button (bottom right)
+   -> "Scan page for wrong answers", and wait a few seconds per question.
+4. Open  http://localhost:8787/  -> Review tab -> do your flashcards.
+
+
+SOMETHING BROKEN?
+-----------------
+Re-run Install.bat. It is safe to run any number of times and fixes most things.
+
+Full manual - models, switching to offline mode, backing up your flashcards,
+every error message explained:  see  README.md  in this folder.
+
+To remove everything:  Uninstall.bat  (it asks before deleting your flashcards).

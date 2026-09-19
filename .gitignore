@@ -1,0 +1,41 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+.buildvenv/
+env/
+
+# ---- PyInstaller build output ----
+server/build/
+server/dist/
+build_log.txt
+*.spec.bak
+
+# ---- Local data (personal study database, never commit) ----
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+server/images/
+server/*.log
+run.log
+
+# ---- Release staging ----
+# The shareable zip is committed; the unpacked staging folder it is built from is not.
+release/TestbookErrorLogger-Setup/
+release/*/
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# ---- Claude Code local settings ----
+.claude/settings.local.json

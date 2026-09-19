@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, sans-serif; width: 280px; padding: 16px; margin: 0; }
+  h3 { margin: 0 0 12px; font-size: 15px; }
+  .status { padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
+  .ok { background: #d1fae5; color: #065f46; }
+  .err { background: #fee2e2; color: #991b1b; }
+  .stat-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+  .stat-row strong { color: #667eea; }
+  button { width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h3>📝 Testbook Error Logger</h3>
+<div id="status" class="status">Checking server...</div>
+<div id="stats"></div>
+<button id="openDash">Open Dashboard</button>
+<script src="popup.js"></script>
+</body>
+</html>

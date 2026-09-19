@@ -1,0 +1,640 @@
+<title>Error Logger Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+
+<style>
+  :root {
+    --paper:      #f4f6f8;
+    --surface:    #ffffff;
+    --surface-2:  #eceff3;
+    --rule:       #d8dee6;
+    --ink:        #141922;
+    --ink-soft:   #5a6472;
+    --ink-faint:  #808b9a;
+    --mark:       #b93a2d;   /* correction pen */
+    --mark-soft:  #fbeceb;
+    --key:        #1f4489;   /* answer-key blue */
+    --key-soft:   #e8eefa;
+
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --sans:  "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono:  "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+
+    --measure: 34rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:     #0f1218;
+      --surface:   #161b23;
+      --surface-2: #1d232d;
+      --rule:      #2c343f;
+      --ink:       #e6eaf1;
+      --ink-soft:  #9aa4b3;
+      --ink-faint: #78828f;
+      --mark:      #e5786a;
+      --mark-soft: #2a1b1a;
+      --key:       #8aabec;
+      --key-soft:  #182231;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:     #0f1218;
+    --surface:   #161b23;
+    --surface-2: #1d232d;
+    --rule:      #2c343f;
+    --ink:       #e6eaf1;
+    --ink-soft:  #9aa4b3;
+    --ink-faint: #78828f;
+    --mark:      #e5786a;
+    --mark-soft: #2a1b1a;
+    --key:       #8aabec;
+    --key-soft:  #182231;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  /* ---------------------------------------------------------- masthead */
+  .masthead { display: flex; flex-direction: column; gap: 1rem; }
+
+  .eyebrow {
+    font-size: .72rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--mark);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 6vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: var(--measure);
+    margin: 0;
+  }
+
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  .sites {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    padding-top: .35rem;
+  }
+
+  .site {
+    font-size: .78rem;
+    font-weight: 500;
+    padding: .18rem .55rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    background: var(--surface);
+  }
+
+  /* ---------------------------------------------------------- sections */
+  section { display: flex; flex-direction: column; gap: 1.1rem; }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin: 0;
+    padding-bottom: .55rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  h3 {
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: .005em;
+  }
+
+  p { margin: 0; max-width: var(--measure); }
+  p + p { margin-top: -.2rem; }
+
+  a { color: var(--key); text-underline-offset: 2px; }
+  a:focus-visible, .step:focus-visible {
+    outline: 2px solid var(--mark);
+    outline-offset: 3px;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: .86em;
+    background: var(--surface-2);
+    border-radius: 3px;
+    padding: .08em .32em;
+    word-break: break-word;
+  }
+
+  .path {
+    font-family: var(--mono);
+    font-size: .82rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--key);
+    border-radius: 0 4px 4px 0;
+    padding: .7rem .85rem;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--ink);
+  }
+
+  /* ---------------------------------------------------------- steps */
+  /* Numbered because install genuinely is a sequence - order matters. */
+  ol.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    counter-reset: step;
+  }
+
+  ol.steps > li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 2.1rem 1fr;
+    gap: 0 1rem;
+    align-items: start;
+  }
+
+  ol.steps > li::before {
+    content: counter(step);
+    font-family: var(--mono);
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--mark);
+    background: var(--mark-soft);
+    border-radius: 50%;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: grid;
+    place-items: center;
+    margin-top: .05rem;
+  }
+
+  ol.steps .body {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    max-width: var(--measure);
+  }
+
+  ol.steps .body > p:first-child { font-weight: 500; color: var(--ink); }
+
+  .note { color: var(--ink-soft); font-size: .93rem; }
+
+  /* ---------------------------------------------------------- chrome sub-steps */
+  ol.clicks {
+    margin: .1rem 0 0;
+    padding: .9rem 1rem .9rem 2.6rem;
+    background: var(--key-soft);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    font-size: .93rem;
+  }
+
+  ol.clicks li::marker { color: var(--key); font-weight: 600; }
+  ol.clicks strong { font-weight: 600; }
+
+  /* ---------------------------------------------------------- cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.15rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+
+  .card.pick { border-color: var(--mark); }
+
+  .card .tag {
+    font-size: .68rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink-faint);
+  }
+
+  .card.pick .tag { color: var(--mark); }
+
+  .card h3 { font-family: var(--serif); font-size: 1.22rem; font-weight: 600; }
+
+  .card ul {
+    margin: 0;
+    padding-left: 1.05rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    font-size: .92rem;
+    color: var(--ink-soft);
+  }
+
+  /* ---------------------------------------------------------- table */
+  .scroll { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: .92rem;
+    min-width: 22rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: .58rem .8rem .58rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  th {
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+
+  td code { background: none; padding: 0; color: var(--key); }
+
+  /* ---------------------------------------------------------- callout */
+  .callout {
+    background: var(--mark-soft);
+    border-radius: 6px;
+    padding: .95rem 1.1rem;
+    font-size: .93rem;
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    max-width: var(--measure);
+  }
+
+  .callout .label {
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--mark);
+  }
+
+  /* ---------------------------------------------------------- fixes */
+  dl.fixes { margin: 0; display: flex; flex-direction: column; gap: 1rem; }
+
+  dl.fixes dt {
+    font-weight: 600;
+    font-size: .95rem;
+    display: flex;
+    gap: .55rem;
+    align-items: baseline;
+  }
+
+  dl.fixes dt::before {
+    content: "";
+    flex: none;
+    width: .4rem;
+    height: .4rem;
+    border-radius: 50%;
+    background: var(--mark);
+    transform: translateY(-.15em);
+  }
+
+  dl.fixes dd {
+    margin: .2rem 0 0 .95rem;
+    color: var(--ink-soft);
+    font-size: .93rem;
+    max-width: var(--measure);
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.1rem;
+    color: var(--ink-faint);
+    font-size: .85rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Setup guide &middot; Windows</div>
+    <h1>Error Logger</h1>
+    <p class="standfirst">
+      After every mock, one click pulls out every question you got <strong>wrong or
+      skipped</strong>, sorts them by subject, topic and type of mistake, and turns them
+      into flashcards that come back exactly when you're about to forget them.
+    </p>
+    <p class="note">
+      Everything runs on your own PC. No subscription, no account needed for the
+      offline mode.
+    </p>
+    <div class="sites">
+      <span class="site">Testbook</span>
+      <span class="site">Physics Wallah</span>
+      <span class="site">Oliveboard</span>
+      <span class="site">TestRanking</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Install it</h2>
+    <p class="note">
+      Takes 5&ndash;15 minutes, almost all of it downloading. No admin password,
+      nothing installed system-wide.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <div class="body">
+          <p>Unzip the whole folder first.</p>
+          <p class="note">Don't run anything from inside the zip &mdash; Windows will
+          block it in confusing ways.</p>
+        </div>
+      </li>
+
+      <li>
+        <div class="body">
+          <p>Double-click <code>Install.bat</code>.</p>
+        </div>
+      </li>
+
+      <li>
+        <div class="body">
+          <p>If a blue box says &ldquo;Windows protected your PC&rdquo;, click
+          <strong>More info</strong> &rarr; <strong>Run anyway</strong>.</p>
+          <p class="note">It says that about every unsigned script, not just this one.</p>
+        </div>
+      </li>
+
+      <li>
+        <div class="body">
+          <p>Answer the two questions it asks.</p>
+          <p class="note">Which AI model (see below), and whether to start automatically
+          with Windows. Pressing Enter picks the recommended option both times.</p>
+        </div>
+      </li>
+
+      <li>
+        <div class="body">
+          <p>Wait while it downloads.</p>
+          <p class="note">It installs Ollama, sets up the model, copies the app,
+          makes your shortcuts, and starts the server.</p>
+        </div>
+      </li>
+
+      <li>
+        <div class="body">
+          <p>Chrome opens on its extensions page. Four clicks:</p>
+          <ol class="clicks">
+            <li>Turn on <strong>Developer mode</strong> &mdash; toggle, top right</li>
+            <li>Click <strong>Load unpacked</strong></li>
+            <li>Press <strong>Ctrl+V</strong> &mdash; the folder path is already on your
+                clipboard &mdash; then Enter</li>
+            <li>Click <strong>Select Folder</strong>, then pin the extension from the
+                puzzle icon</li>
+          </ol>
+          <p class="note">This is the only manual step. Chrome refuses to let a script
+          install an extension for you, for good reasons.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout">
+      <span class="label">If anything goes wrong</span>
+      <p>Re-run <code>Install.bat</code>. It's safe to run any number of times, repairs a
+      broken install, and never touches flashcards you've already saved.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Which model?</h2>
+    <p>You're asked this once, during install. Both work; you can switch later.</p>
+
+    <div class="cards">
+      <div class="card pick">
+        <span class="tag">Recommended &middot; default</span>
+        <h3>Ollama Cloud</h3>
+        <p class="note">DeepSeek V3.1, a 671-billion-parameter model, free on Ollama's
+        preview tier.</p>
+        <ul>
+          <li>Nothing to download</li>
+          <li>Clearly the best categorisation</li>
+          <li>One free sign-in during install, ~30 seconds</li>
+          <li>Needs internet when you capture</li>
+          <li>Question text goes to Ollama's servers</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <span class="tag">Private &middot; offline</span>
+        <h3>Fully local</h3>
+        <p class="note">Downloads qwen2.5:7b-instruct (~4.7&nbsp;GB) and runs it on your
+        own machine.</p>
+        <ul>
+          <li>Works offline forever</li>
+          <li>No account, no rate limits</li>
+          <li>Nothing ever leaves your PC</li>
+          <li>Slightly rougher on subtle categorisation</li>
+          <li>Wants a decent machine; a GPU helps a lot</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Using it every day</h2>
+
+    <ol class="steps">
+      <li>
+        <div class="body">
+          <p>Leave the server running.</p>
+          <p class="note">It's a small black console window. If it's closed, open the
+          <strong>Testbook Error Logger</strong> shortcut on your Desktop.</p>
+        </div>
+      </li>
+      <li>
+        <div class="body">
+          <p>Give your mock as usual, then open the solution / analysis page.</p>
+        </div>
+      </li>
+      <li>
+        <div class="body">
+          <p>Click the floating <strong>Log Mistakes</strong> button, bottom right
+          &rarr; <strong>Scan page for wrong answers</strong>.</p>
+          <p class="note">A few seconds per question while the AI reads them. For a
+          single question, use <strong>Log current question only</strong>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="body">
+          <p>Open <a href="http://localhost:8787/">localhost:8787</a> &rarr;
+          <strong>Review</strong> &rarr; do your flashcards.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout">
+      <span class="label">On Oliveboard</span>
+      <p>The extension clicks through each wrong and unattempted question itself &mdash;
+      that site only decodes one question at a time. A toast counts the progress. Let it
+      finish; it returns you to where you started.</p>
+    </div>
+
+    <h3>What the dashboard gives you</h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Tab</th><th>What it's for</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Review</strong></td>
+            <td>Flashcards on the same spaced-repetition schedule Anki uses. Cards you
+            keep fumbling come back sooner; mastered ones fade away.</td>
+          </tr>
+          <tr>
+            <td><strong>Weak zones</strong></td>
+            <td>The topics and mistake types actually costing you marks.</td>
+          </tr>
+          <tr>
+            <td><strong>Browse</strong></td>
+            <td>Everything you've logged, by subject and topic.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your data</h2>
+    <p>Everything you've ever logged lives in one file:</p>
+    <div class="path">C:\Users\&lt;you&gt;\AppData\Local\TestbookErrorLogger\errors.db</div>
+    <p class="note">Copy it somewhere safe now and then &mdash; that single file
+    <em>is</em> your revision history. Re-installing never touches it. Moving to a new
+    PC? Install there, then drop this file in the same place.</p>
+  </section>
+
+  <section>
+    <h2>Switching the model later</h2>
+    <p>Open this file in Notepad:</p>
+    <div class="path">C:\Users\&lt;you&gt;\AppData\Local\TestbookErrorLogger\Start Error Logger.cmd</div>
+    <p>Change the <code>OLLAMA_MODEL</code> line to one of:</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Model</th><th>What it is</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>deepseek-v3.1:671b-cloud</code></td><td>Cloud, best quality (default)</td></tr>
+          <tr><td><code>gpt-oss:20b-cloud</code></td><td>Cloud, lighter and faster</td></tr>
+          <tr><td><code>qwen2.5:7b-instruct</code></td><td>Fully local, offline</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Save, then close and reopen the server window. Going local for the
+    first time? Run <code>ollama pull qwen2.5:7b-instruct</code> once in a terminal
+    first.</p>
+  </section>
+
+  <section>
+    <h2>When something breaks</h2>
+    <dl class="fixes">
+      <dt>&ldquo;Server offline&rdquo; toast in Chrome</dt>
+      <dd>The console window is closed. Open the Desktop shortcut.</dd>
+
+      <dt>Nothing happens on the solutions page</dt>
+      <dd>The extension isn't loaded or is switched off. Check
+      <code>chrome://extensions</code> &mdash; it should be listed and enabled. If it's
+      missing, redo step 6 of the install.</dd>
+
+      <dt>&ldquo;Auth error 401 / 403&rdquo;</dt>
+      <dd>Your cloud sign-in expired. Press Win+R, type <code>cmd</code>, then run
+      <code>ollama signin</code>.</dd>
+
+      <dt>&ldquo;Rate limit (429)&rdquo;</dt>
+      <dd>You hit the free cloud tier's ceiling. Wait an hour, or switch to the local
+      model above.</dd>
+
+      <dt>&ldquo;Found 0 questions&rdquo;</dt>
+      <dd>The site changed its page layout. Try <strong>Log current question only</strong>
+      &mdash; it grabs whatever is on screen.</dd>
+
+      <dt>Port 8787 already in use</dt>
+      <dd>Something else took the port. Close it, or ask whoever sent you this to change
+      it.</dd>
+
+      <dt>A card is categorised wrongly</dt>
+      <dd>Happens occasionally, mostly on local mode and image-heavy quant questions. Edit
+      the card from the dashboard.</dd>
+
+      <dt>Anything else</dt>
+      <dd>Re-run <code>Install.bat</code>.</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Removing it</h2>
+    <p>Run <code>Uninstall.bat</code> from the setup folder. It asks before deleting your
+    flashcards.</p>
+    <p class="note">Two things it deliberately leaves behind, in case you use them for
+    something else: <strong>Ollama and its models</strong> (remove from Settings &rarr;
+    Apps) and <strong>the Chrome extension</strong> (remove from
+    <code>chrome://extensions</code>).</p>
+  </section>
+
+  <footer>
+    <div>Windows 10 / 11 &middot; Chrome, Edge or Brave &middot; ~1&nbsp;GB free space,
+    or ~6&nbsp;GB for the offline model</div>
+    <div>The same guide ships in the setup folder as README.md.</div>
+  </footer>
+
+</div>

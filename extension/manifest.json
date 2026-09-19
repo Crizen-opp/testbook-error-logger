@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Error Logger",
+  "version": "1.2.0",
+  "description": "One-click capture of mistakes from Testbook, PW (Physics Wallah), DPPS, Oliveboard, and TestRanking into a local flashcard-based revision system.",
+  "permissions": ["activeTab", "storage", "alarms"],
+  "host_permissions": [
+    "https://testbook.com/*",
+    "https://*.testbook.com/*",
+    "https://pw.live/*",
+    "https://*.pw.live/*",
+    "https://oliveboard.in/*",
+    "https://*.oliveboard.in/*",
+    "https://testranking.in/*",
+    "https://*.testranking.in/*",
+    "http://localhost:8787/*",
+    "http://127.0.0.1:8787/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://testbook.com/*",
+        "https://*.testbook.com/*",
+        "https://pw.live/*",
+        "https://*.pw.live/*",
+        "https://oliveboard.in/*",
+        "https://*.oliveboard.in/*",
+        "https://testranking.in/*",
+        "https://*.testranking.in/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Testbook Error Logger"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
