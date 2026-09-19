@@ -1,10 +1,14 @@
 # Testbook Error Logger
 
-Auto-capture your Testbook mistakes → structured flashcards → spaced repetition revision. **Zero typing, zero API costs** (uses Ollama Cloud's free tier).
+Auto-capture your mock-test mistakes → structured flashcards → spaced repetition
+revision. **Zero typing, zero API costs** (uses Ollama Cloud's free tier).
+
+Works on **Testbook**, **Physics Wallah** (`pw.live`, including DPPs), **Oliveboard**
+and **TestRanking**.
 
 ## What it does
 
-1. **1-click capture** — On any Testbook solution page, a floating button scrapes wrong/skipped questions
+1. **1-click capture** — On any supported solution page, a floating button scrapes wrong/skipped questions
 2. **DeepSeek V3.1 categorizes** — Ollama Cloud runs a 671B param model for free (preview tier). Extracts question, answers, subject, topic, mistake type, and writes a revision note.
 3. **SQLite storage** — All local, all yours
 4. **Flashcard revision** — SM-2 spaced repetition (same algo as Anki). Cards you struggle with show more often
@@ -46,8 +50,6 @@ source instead.
 ## Setup (one-time, ~10 min) — manual / development
 
 ### 1. Install Ollama (v0.12 or later)
-
-If you don't already have it (you do, for Dark Science YouTube pipeline):
 
 **Mac/Linux:** `curl -fsSL https://ollama.com/install.sh | sh`
 **Windows:** Download from https://ollama.com
@@ -104,8 +106,8 @@ Dashboard opens at http://localhost:8787/
 
 ## Daily workflow
 
-1. Give test on Testbook as usual
-2. On the solution/analysis page, click floating **📝 Log Mistakes** (bottom right) → **Scan page for wrong answers**
+1. Give your mock test as usual
+2. On the solution / analysis page, click floating **📝 Log Mistakes** (bottom right) → **Scan page for wrong answers**
 3. Wait ~3-8 seconds per wrong question (cloud 671B is fast, but there's network latency)
 4. Open http://localhost:8787/ → **Review** tab → flashcards
 
@@ -159,7 +161,7 @@ Lower quality on subtle categorization but reliable and private.
 
 ## Free tier caveats
 
-Ollama Cloud is currently in **preview**. Expected to move to paid in 6-12 months. Rate limits today are generous (plenty for study use — probably 100+ questions/day easy), but they're not publicly documented and can change.
+Ollama Cloud was in **preview** when this was written (2026), free but expected to move to paid eventually — check Ollama's current terms before relying on it. Rate limits were generous (plenty for study use — probably 100+ questions/day easy), but they're not publicly documented and can change.
 
 If you hit a rate limit mid-session, the system shows a clear error pointing you to switch to local mode. No data loss — just stop, switch the env var, restart the server, and resume.
 
@@ -175,10 +177,10 @@ If you hit a rate limit mid-session, the system shows a clear error pointing you
 → Either wait an hour or switch to local: `export OLLAMA_MODEL=qwen2.5:7b-instruct`, pull it if needed, and restart. Heuristic fallback also kicks in automatically if cloud is down — questions still save with regex-extracted answers, just without smart categorization.
 
 **"Found 0 questions"**
-→ Testbook's DOM may have changed. Try "Log current question only" — grabs whatever's in viewport.
+→ The site's DOM may have changed. Try "Log current question only" — grabs whatever's in viewport.
 
 **Categorization is off**
-→ Edit `STRUCTURE_PROMPT` in `server/app.py` to add few-shot examples from your SSC syllabus. Even DeepSeek benefits from 2-3 examples of your specific question types.
+→ Edit `STRUCTURE_PROMPT` in `server/app.py` to add few-shot examples from your own syllabus. Even DeepSeek benefits from 2-3 examples of the question types you actually sit.
 
 ## What happens if Ollama is down?
 
