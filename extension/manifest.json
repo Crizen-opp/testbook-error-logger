@@ -38,7 +38,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Testbook Error Logger"
+    "default_title": "Error Logger"
   },
   "icons": {
     "16": "icon.png",

@@ -56,7 +56,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='testbook-server',
+    name='error-logger-server',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

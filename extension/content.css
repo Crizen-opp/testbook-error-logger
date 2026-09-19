@@ -1,4 +1,4 @@
-/* Floating action button - positioned bottom-right, out of the way of Testbook UI */
+/* Floating action button - positioned bottom-right, out of the way of the site's UI */
 #tb-error-logger-btn {
   position: fixed;
   bottom: 24px;

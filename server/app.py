@@ -1,6 +1,6 @@
 """
-Testbook Error Logger - Local Server
-====================================
+Error Logger - Local Server
+===========================
 Receives scraped data from the Chrome extension, uses a local Ollama model to
 structure and categorize it, stores it in SQLite, and serves a local web
 dashboard with flashcard-based spaced repetition review.
@@ -81,20 +81,25 @@ else:
 # must never silently switch databases. Deliberately NOT under Desktop/Documents: OneDrive
 # syncs those and can resurrect a stale copy over the real one (bit us on 2026-07-10, twice
 # — first via a resurrected Desktop errors.db, then via the exe itself being copied there).
-_env_db = os.environ.get("TESTBOOK_DB_PATH")
+# ERROR_LOGGER_DB_PATH is the current name; TESTBOOK_DB_PATH is still honoured so
+# installs predating the rename keep working.
+_env_db = os.environ.get("ERROR_LOGGER_DB_PATH") or os.environ.get("TESTBOOK_DB_PATH")
 if _env_db:
     DB_PATH = Path(_env_db).expanduser().resolve()
 else:
-    DB_PATH = Path(os.environ["LOCALAPPDATA"]) / "TestbookErrorLogger" / "errors.db"
+    _local_appdata = os.environ.get("LOCALAPPDATA")
+    _app_data_root = Path(_local_appdata) if _local_appdata else Path.home() / ".local" / "share"
+    DB_PATH = _app_data_root / "ErrorLogger" / "errors.db"
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # One-time bootstrap: if the canonical DB doesn't exist yet, seed it (db + images) from
-# the best available source — next to this exe/script first (freshest), then the old
-# %APPDATA% (Roaming) location from earlier builds.
+# the best available source — next to this exe/script first (freshest), then the two
+# pre-rename locations (%LOCALAPPDATA%, then the older %APPDATA%/Roaming one).
 if not DB_PATH.exists():
     import shutil
+    _legacy_local = Path(os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))) / "TestbookErrorLogger" / "errors.db"
     _old_db = Path(os.environ.get("APPDATA", os.path.expanduser("~"))) / "TestbookErrorLogger" / "errors.db"
-    for _src in (_local_source_db, _old_db):
+    for _src in (_local_source_db, _legacy_local, _old_db):
         if _src.exists() and _src != DB_PATH:
             shutil.copy2(str(_src), str(DB_PATH))
             _src_images = _src.parent / "errors_images"
@@ -475,7 +480,7 @@ Return a JSON object with EXACTLY these fields (no extra fields, no markdown fen
   "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
   "your_answer": "what student picked — use correct_answer_hint/your_answer_hint if provided, otherwise extract from raw_text. If a platform shows the answer as a number (e.g. '3'), resolve it to the full option text.",
   "correct_answer": "correct answer — same rule as your_answer. Always give the full option text, not just a number.",
-  "solution_text": "CRITICAL: Copy Testbook's original solution VERBATIM from extracted_solution. Preserve ALL step-by-step calculations, intermediate steps (e.g. '14589 - 13511 = 1078'), formulas, and the final answer line. DO NOT rewrite, summarize, shorten, or paraphrase it. Only clean up obvious formatting garbage (stray HTML entities, duplicate whitespace). If the original has 'Given:', 'Formula Used:', 'Calculation:' sections, keep those section headers. The student needs to see the exact working steps to learn the method.",
+  "solution_text": "CRITICAL: Copy the platform's original solution VERBATIM from extracted_solution. Preserve ALL step-by-step calculations, intermediate steps (e.g. '14589 - 13511 = 1078'), formulas, and the final answer line. DO NOT rewrite, summarize, shorten, or paraphrase it. Only clean up obvious formatting garbage (stray HTML entities, duplicate whitespace). If the original has 'Given:', 'Formula Used:', 'Calculation:' sections, keep those section headers. The student needs to see the exact working steps to learn the method.",
   "subject": "EXACTLY one of: Quantitative Aptitude | Reasoning | English | Economics | History | Geography | Polity | General Awareness | Computer Science | Biology | Chemistry | Physics | Other",
   "topic": "main topic like 'Profit and Loss', 'Coding-Decoding', 'Characteristics of Money'",
   "subtopic": "more specific like 'Successive discounts', 'Letter-number coding'",
@@ -718,7 +723,7 @@ def update_sr(error_row: dict, quality: int) -> dict:
 
 
 # ---------- FastAPI ----------
-app = FastAPI(title="Testbook Error Logger")
+app = FastAPI(title="Error Logger")
 
 # Ollama can only meaningfully process one request at a time on a single GPU.
 # Without this, logging 20 questions at once spawns 20 concurrent HTTP connections
@@ -1566,7 +1571,7 @@ app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
 
 
 if __name__ == "__main__":
-    print(f"🚀 Testbook Error Logger running at http://localhost:{PORT}")
+    print(f"🚀 Error Logger running at http://localhost:{PORT}")
     print(f"   Dashboard: http://localhost:{PORT}/")
     # Loud DB banner: if you ever see a surprising error count, check THIS line first.
     try:

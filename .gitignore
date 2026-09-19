@@ -24,7 +24,7 @@ run.log
 
 # ---- Release staging ----
 # The shareable zip is committed; the unpacked staging folder it is built from is not.
-release/TestbookErrorLogger-Setup/
+release/ErrorLogger-Setup/
 release/*/
 
 # ---- Editors / OS ----

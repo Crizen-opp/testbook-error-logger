@@ -1,5 +1,5 @@
 <#
-    Testbook Error Logger - uninstaller.
+    Error Logger - uninstaller.
 
     Removes the app, the launcher and the shortcuts. Keeps your errors.db and
     captured images unless you explicitly say otherwise. Leaves Ollama alone -
@@ -10,8 +10,8 @@ param([switch]$Silent, [switch]$RemoveData)
 
 $ErrorActionPreference = 'Continue'
 
-$AppName     = 'Testbook Error Logger'
-$InstallRoot = Join-Path $env:LOCALAPPDATA 'TestbookErrorLogger'
+$AppName     = 'Error Logger'
+$InstallRoot = Join-Path $env:LOCALAPPDATA 'ErrorLogger'
 $Db          = Join-Path $InstallRoot 'errors.db'
 $Images      = Join-Path $InstallRoot 'errors_images'
 
@@ -24,7 +24,7 @@ Say "  $AppName - uninstall"
 Say '  ------------------------------------------'
 
 # --- stop the server if it is running
-$procs = Get-Process -Name 'testbook-server' -ErrorAction SilentlyContinue
+$procs = Get-Process -Name 'error-logger-server','testbook-server' -ErrorAction SilentlyContinue
 if ($procs) {
     $procs | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1

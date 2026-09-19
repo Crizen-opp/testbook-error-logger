@@ -25,7 +25,7 @@ No admin rights needed. Nothing is installed system-wide.
 DAILY USE
 ---------
 1. Leave the small black console window open. If it is closed, use the
-   "Testbook Error Logger" shortcut on your Desktop.
+   "Error Logger" shortcut on your Desktop.
 2. Finish your mock, open the solution / analysis page.
 3. Click the floating  "Log Mistakes"  button (bottom right)
    -> "Scan page for wrong answers", and wait a few seconds per question.

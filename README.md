@@ -1,4 +1,4 @@
-# Testbook Error Logger
+# Error Logger
 
 Auto-capture your mock-test mistakes → structured flashcards → spaced repetition
 revision. **Zero typing, zero API costs** (uses Ollama Cloud's free tier).
@@ -26,14 +26,14 @@ Build the package once:
 powershell -ExecutionPolicy Bypass -File build-release.ps1
 ```
 
-That runs PyInstaller, assembles `release/TestbookErrorLogger-Setup/` (installer +
-`testbook-server.exe` + extension), refuses to build if your `errors.db`, images or
+That runs PyInstaller, assembles `release/ErrorLogger-Setup/` (installer +
+`error-logger-server.exe` + extension), refuses to build if your `errors.db`, images or
 logs sneak in, and zips it. Send them the zip.
 
 On their side: unzip, double-click **Install.bat**. It installs Ollama (winget, else a
 silent download), starts it, sets up the model (Ollama Cloud sign-in, or pulls
 `qwen2.5:7b-instruct` for offline use), copies the app to
-`%LOCALAPPDATA%\TestbookErrorLogger`, makes Desktop/Start-Menu shortcuts and an
+`%LOCALAPPDATA%\ErrorLogger`, makes Desktop/Start-Menu shortcuts and an
 optional run-at-login entry, starts the server, then opens `chrome://extensions`
 with the extension path already on their clipboard for **Load unpacked** — the one
 step Chrome will not let a script do. No admin rights, nothing system-wide.
@@ -189,20 +189,20 @@ System degrades gracefully. Questions still get saved with regex-extracted "your
 ## File structure
 
 ```
-testbook-error-logger/
+error-logger/
 ├── extension/               # Chrome extension (Manifest V3)
 │   ├── manifest.json
 │   ├── background.js        # Service worker
-│   ├── content.js           # Scrapes Testbook / Oliveboard solution pages
+│   ├── content.js           # Scrapes the supported sites' solution pages
 │   ├── content.css          # Floating button + toast styles
 │   ├── popup.html / popup.js
 │   └── icon.png
 ├── server/                  # FastAPI backend
 │   ├── app.py               # Ingest + Ollama + SM-2 + REST API
 │   ├── requirements.txt
-│   ├── testbook_server.spec # PyInstaller build recipe
-│   ├── nginx-testbook.conf  # Optional reverse-proxy config
-│   └── testbook-error-logger.service   # Optional systemd unit
+│   ├── error_logger_server.spec   # PyInstaller build recipe
+│   ├── nginx-error-logger.conf    # Optional reverse-proxy config
+│   └── error-logger.service       # Optional systemd unit
 ├── webapp/
 │   └── index.html           # Dashboard + flashcard UI (single file, no build step)
 ├── installer/               # One-click install for other people
@@ -217,4 +217,4 @@ testbook-error-logger/
 
 Not in the repo (created locally, ignored by git): `server/errors.db` — your own
 flashcard database — plus `server/venv/`, `server/build/`, `server/dist/` and the
-unpacked `release/TestbookErrorLogger-Setup/` staging folder.
+unpacked `release/ErrorLogger-Setup/` staging folder.

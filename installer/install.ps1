@@ -1,5 +1,5 @@
 <#
-    Testbook Error Logger - one-click installer (Windows)
+    Error Logger - one-click installer (Windows)
 
     Installs, in order:
       1. Ollama            (winget, else silent download from ollama.com)
@@ -34,8 +34,8 @@ $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
 
 # ---------------------------------------------------------------- constants
-$AppName      = 'Testbook Error Logger'
-$InstallRoot  = Join-Path $env:LOCALAPPDATA 'TestbookErrorLogger'
+$AppName      = 'Error Logger'
+$InstallRoot  = Join-Path $env:LOCALAPPDATA 'ErrorLogger'
 $AppDir       = Join-Path $InstallRoot 'app'
 $ExtDir       = Join-Path $InstallRoot 'extension'
 $LauncherName = 'Start Error Logger.cmd'
@@ -249,8 +249,8 @@ New-Item -ItemType Directory -Force -Path $AppDir, $ExtDir | Out-Null
 
 # The release payload ships a prebuilt exe next to this script; a plain copy of
 # the repo does not, so fall back to running from source in a venv.
-$payloadExe = Join-Path $PSScriptRoot 'app\testbook-server.exe'
-$repoExe    = Join-Path $SourceDir  'server\dist\testbook-server.exe'
+$payloadExe = Join-Path $PSScriptRoot 'app\error-logger-server.exe'
+$repoExe    = Join-Path $SourceDir  'server\dist\error-logger-server.exe'
 $srcExe     = $null
 if (Test-Path $payloadExe) { $srcExe = $payloadExe } elseif (Test-Path $repoExe) { $srcExe = $repoExe }
 
@@ -262,7 +262,7 @@ if (-not (Test-Path (Join-Path $srcExt 'manifest.json'))) {
 
 $RunMode = 'exe'
 if ($srcExe) {
-    Copy-Item $srcExe (Join-Path $AppDir 'testbook-server.exe') -Force
+    Copy-Item $srcExe (Join-Path $AppDir 'error-logger-server.exe') -Force
     Ok 'server installed (standalone, no Python needed)'
 } else {
     # ---- source mode: needs Python 3.9+
@@ -297,7 +297,7 @@ Ok "extension files at  $ExtDir"
 
 # ---- launcher, with the chosen model baked in
 $runLine = if ($RunMode -eq 'exe') {
-    '"%~dp0app\testbook-server.exe"'
+    '"%~dp0app\error-logger-server.exe"'
 } else {
     '"%~dp0app\venv\Scripts\python.exe" "%~dp0app\server\app.py"'
 }
@@ -405,7 +405,7 @@ Say "   Dashboard   http://localhost:$Port/"
 Say "   Model       $Model  ($Mode)"
 Say "   Installed   $InstallRoot"
 Say "   Your data   $InstallRoot\errors.db  (never touched by re-installs)"
-Say '   Start later Desktop shortcut, or Start Menu > Testbook Error Logger'
+Say '   Start later Desktop shortcut, or Start Menu > Error Logger'
 Say '   Remove      run Uninstall.bat from this installer folder'
 Say ''
 Say '   Daily use: finish a mock -> open the solutions page -> click the'

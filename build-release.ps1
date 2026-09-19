@@ -1,9 +1,9 @@
 <#
     Builds the shareable one-click package.
 
-    Produces  release\TestbookErrorLogger-Setup\  and a zip of it:
+    Produces  release\ErrorLogger-Setup\  and a zip of it:
 
-        TestbookErrorLogger-Setup\
+        ErrorLogger-Setup\
           READ-ME-FIRST.txt    <- quick start
           README.md            <- full manual
           setup-guide.html     <- same manual, opens in a browser
@@ -11,7 +11,7 @@
           Uninstall.bat
           install.ps1
           uninstall.ps1
-          app\testbook-server.exe
+          app\error-logger-server.exe
           extension\...
 
     Your errors.db, captured images and logs are never copied in - the check at
@@ -19,7 +19,7 @@
 
     Usage:
       powershell -ExecutionPolicy Bypass -File build-release.ps1
-        -SkipBuild    reuse server\dist\testbook-server.exe as-is
+        -SkipBuild    reuse server\dist\error-logger-server.exe as-is
         -NoZip        leave the folder, don't zip it
 #>
 [CmdletBinding()]
@@ -30,8 +30,8 @@ $ErrorActionPreference = 'Stop'
 $Root      = $PSScriptRoot
 $ServerDir = Join-Path $Root 'server'
 $OutRoot   = Join-Path $Root 'release'
-$Payload   = Join-Path $OutRoot 'TestbookErrorLogger-Setup'
-$Exe       = Join-Path $ServerDir 'dist\testbook-server.exe'
+$Payload   = Join-Path $OutRoot 'ErrorLogger-Setup'
+$Exe       = Join-Path $ServerDir 'dist\error-logger-server.exe'
 
 function Step ($m) { Write-Host ''; Write-Host "==> $m" -ForegroundColor Cyan }
 function Ok   ($m) { Write-Host "    OK   $m" -ForegroundColor Green }
@@ -81,12 +81,12 @@ if ($SkipBuild) {
     Step 'Skipping PyInstaller build (-SkipBuild)'
     if (-not (Test-Path $Exe)) { throw "No existing exe at $Exe - drop -SkipBuild." }
 } else {
-    Step 'Building testbook-server.exe with PyInstaller'
+    Step 'Building error-logger-server.exe with PyInstaller'
     $venvPy = Get-BuildPython
     Info "python: $venvPy"
     Push-Location $ServerDir
     try {
-        & $venvPy -m PyInstaller --noconfirm --clean testbook_server.spec
+        & $venvPy -m PyInstaller --noconfirm --clean error_logger_server.spec
         if ($LASTEXITCODE -ne 0) { throw 'PyInstaller failed - see the output above.' }
     } finally { Pop-Location }
     Ok 'exe built'
@@ -105,7 +105,7 @@ if (Test-Path $Payload) {
 New-Item -ItemType Directory -Force -Path (Join-Path $Payload 'app'),
                                          (Join-Path $Payload 'extension') | Out-Null
 
-Copy-Item $Exe (Join-Path $Payload 'app\testbook-server.exe') -Force
+Copy-Item $Exe (Join-Path $Payload 'app\error-logger-server.exe') -Force
 
 # Extension: only the files the browser actually loads.
 foreach ($f in @('manifest.json', 'background.js', 'content.js', 'content.css', 'popup.html', 'popup.js', 'icon.png')) {
@@ -138,7 +138,7 @@ if ($NoZip) {
     Step 'Zip skipped (-NoZip)'
 } else {
     Step 'Zipping'
-    $zip = Join-Path $OutRoot ('TestbookErrorLogger-Setup-{0}.zip' -f (Get-Date -Format 'yyyyMMdd'))
+    $zip = Join-Path $OutRoot ('ErrorLogger-Setup-{0}.zip' -f (Get-Date -Format 'yyyyMMdd'))
     if (Test-Path $zip) { Remove-Item $zip -Force }
     Compress-Archive -Path $Payload -DestinationPath $zip
     Ok ("{0}  ({1:N1} MB)" -f (Split-Path $zip -Leaf), ((Get-Item $zip).Length / 1MB))

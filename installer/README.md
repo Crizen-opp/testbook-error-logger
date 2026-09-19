@@ -39,7 +39,7 @@ you, for good security reasons.
 
 - installs **Ollama** (the thing that runs the AI) if you don't have it
 - starts it, and sets up your chosen model
-- copies the app to `C:\Users\<you>\AppData\Local\TestbookErrorLogger`
+- copies the app to `C:\Users\<you>\AppData\Local\ErrorLogger`
 - makes a Desktop and Start Menu shortcut
 - starts the server and opens your dashboard
 - copies the extension where Chrome can find it
@@ -80,7 +80,7 @@ later either way — see [Switching the model](#switching-the-model).
 ## Using it every day
 
 1. **Leave the server running.** It's a small black console window. If it's closed,
-   open the **Testbook Error Logger** shortcut on your Desktop.
+   open the **Error Logger** shortcut on your Desktop.
 2. Give your mock as usual.
 3. Open the **solution / analysis** page.
 4. Click the floating **📝 Log Mistakes** button (bottom-right) →
@@ -109,7 +109,7 @@ started from.
 Everything lives in one file:
 
 ```
-C:\Users\<you>\AppData\Local\TestbookErrorLogger\errors.db
+C:\Users\<you>\AppData\Local\ErrorLogger\errors.db
 ```
 
 Copy it somewhere safe now and then — that single file *is* your entire revision
@@ -123,7 +123,7 @@ there and drop this file in the same place.
 Open this file in Notepad:
 
 ```
-C:\Users\<you>\AppData\Local\TestbookErrorLogger\Start Error Logger.cmd
+C:\Users\<you>\AppData\Local\ErrorLogger\Start Error Logger.cmd
 ```
 
 Change the `OLLAMA_MODEL` line to one of:

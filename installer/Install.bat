@@ -1,9 +1,9 @@
 @echo off
-title Testbook Error Logger - Install
+title Error Logger - Install
 cd /d "%~dp0"
 
 echo.
-echo   Testbook Error Logger - one-click install
+echo   Error Logger - one-click install
 echo   -----------------------------------------
 echo   This sets up Ollama, the AI model, the server and the Chrome extension.
 echo   Nothing is installed system-wide and no admin rights are needed.
